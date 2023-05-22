@@ -1,0 +1,63 @@
+version: "3.8"
+services:
+  nginx:
+    build:
+      context: docker/nginx
+      dockerfile: Dockerfile
+    volumes:
+      - ./:/var/www/app
+    ports:
+      - "8080:80"
+    depends_on:
+      - php-fpm
+  php-fpm:
+    container_name: php
+    build:
+      context: docker/php-fpm
+      dockerfile: Dockerfile
+    volumes:
+      - ./:/var/www/app
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      APP_ENV: dev
+      PHP_IDE_CONFIG: "serverName=php-fpm"
+      APP_DEBUG: "true"
+      DB_USER: root
+      DB_NAME: app_db
+      DB_PORT: 3306
+      DB_HOST: host.docker.internal
+  php-openapi-generator:
+    image: maxrollundev/php-openapi-generator:8.0
+    volumes:
+      - ./:/var/www/app
+  db:
+    build:
+      context: docker/mysql
+      dockerfile: Dockerfile
+    volumes:
+      - mysql:/var/lib/mysql
+    ports:
+      - "3306:3306"
+#    environment:
+#      MYSQL_ROOT_PASSWORD: my_secret_password
+#      MYSQL_DATABASE: app_db
+#      MYSQL_USER: db_user
+#      MYSQL_PASSWORD: db_user_pass
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpMyAdmin
+    links:
+      - db
+    environment:
+      DB_USER: root
+      DB_NAME: crm_db
+      DB_PORT: 3306
+      DB_HOST: host.docker.internal
+    restart: always
+    ports:
+      - "8081:80"
+    depends_on:
+      - db
+volumes:
+  mysql:
